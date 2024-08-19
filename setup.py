@@ -25,5 +25,6 @@ setup(
 
 
 
-# change it to pyproject.toml
 # [build-system]
+# python setup.py sdist bdist_wheel
+# twine upload dist/*
