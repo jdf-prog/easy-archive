@@ -55,6 +55,9 @@ def iter_archive_dir(
     save_dir.mkdir(parents=True, exist_ok=True)
     if not archive_dir.is_dir():
         return
+    if archive_dir.name.startswith('.git'):
+        print("Skiping `.git` directory")
+        return 
     print(f"### Iterating archive_dir: {archive_dir}, Save_dir: {save_dir} ###")
     file_or_dirs = [f for f in archive_dir.iterdir()]
     file_or_dirs.sort(key=lambda x: x.stat().st_ctime)  # Sort by create time
