@@ -189,7 +189,16 @@ def create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, del
                     for f, start_idx, end_idx in to_remove_archive_files:
                         f.unlink()
                         print(f"Removed overlapping archive file: {f}")
-
+    else:
+        if archive_file.exists():
+            # check_completeness
+            with zipfile.ZipFile(archive_file, "r") as zipf:
+                zipf_files = zipf.namelist()
+            if set(zipf_files) == set([f.name for f in cur_archive_files]):
+                print(f"Archive {archive_file} is complete. Skipping.")
+            else:
+                print(f"Archive {archive_file} is incomplete. removing and rearchiving.")
+                archive_file.unlink()
     re_archive = re_archive or (not archive_file.exists())
     if re_archive or overwrite:
         print(f"Creating archive {archive_file}")
