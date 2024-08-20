@@ -79,6 +79,9 @@ def iter_archive_dir(
     save_dir.mkdir(parents=True, exist_ok=True)
     if not archive_dir.is_dir():
         return
+    if archive_dir.name.startswith('.git'):
+        print("Skiping `.git` directory")
+        return 
     print(f"### Iterating archive_dir: {archive_dir}, Save_dir: {save_dir} ###")
     file_or_dirs = [f for f in archive_dir.iterdir()]
     file_or_dirs.sort(key=lambda x: x.stat().st_ctime)  # Sort by create time
@@ -86,7 +89,6 @@ def iter_archive_dir(
     cur_archive_size = 0
     last_archive_idx = 0
     
-
     archive_info = load_archive_info(save_dir)
     file_hashes = {}
 
@@ -149,7 +151,8 @@ def create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, del
         print(f"Duplicate files found in the archive. Exiting.")
         exit(1)
     
-    if is_last:
+    re_archive = any([archive_file.update_archive for archive_file in cur_archive_files])
+    if re_archive and is_last:
         last_zip_files = [f for f in save_dir.iterdir() if f.name.endswith(".last.zip")]
         print(f"Last zip files: {last_zip_files}")
         assert len(last_zip_files) <= 1, f"Multiple last zip files found: {last_zip_files}"
@@ -157,8 +160,7 @@ def create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, del
             for f in last_zip_files:
                 f.unlink()
                 print(f"Removed previous last zip file: {f}")
-
-    re_archive = any([archive_file.update_archive for archive_file in cur_archive_files])
+    re_archive = re_archive or (not archive_file.exists())
     if re_archive or overwrite:
         print(f"Creating archive {archive_file}")
         with zipfile.ZipFile(archive_file, "w") as zipf:
