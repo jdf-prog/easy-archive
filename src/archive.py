@@ -147,6 +147,17 @@ def create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, del
     archive_name += ".last.zip" if is_last else ".zip"
     archive_file = save_dir / archive_name
     
+    # find all the index of existing archive files [(start_idx, end_idx), ...]
+    existing_archive_files = [] # [flie_name, ...]
+    existing_archive_indexes = [] # [(start_idx, end_idx), ...]
+    for f in save_dir.iterdir():
+        if f.name.endswith(".zip"):
+            match = re.match(r'archive_(\d+)-(\d+).zip', f.name)
+            if match:
+                existing_archive_files.append(f)
+                existing_archive_indexes.append((int(match.group(1)), int(match.group(2))))
+    existing_archive_files.sort()
+    
     if len(set([archive_file.arcname for archive_file in cur_archive_files])) < len(cur_archive_files):
         for archive_file in cur_archive_files:
             print((archive_file.file, archive_file.arcname, archive_file.symlink_target, archive_file.update_archive))
@@ -154,14 +165,31 @@ def create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, del
         exit(1)
     
     re_archive = any([archive_file.update_archive for archive_file in cur_archive_files])
-    if re_archive and is_last:
-        last_zip_files = [f for f in save_dir.iterdir() if f.name.endswith(".last.zip")]
-        print(f"Last zip files: {last_zip_files}")
-        assert len(last_zip_files) <= 1, f"Multiple last zip files found: {last_zip_files}"
-        if last_zip_files:
-            for f in last_zip_files:
-                f.unlink()
-                print(f"Removed previous last zip file: {f}")
+    if re_archive:
+        if is_last:
+            last_zip_files = [f for f in save_dir.iterdir() if f.name.endswith(".last.zip")]
+            print(f"Last zip files: {last_zip_files}")
+            assert len(last_zip_files) <= 1, f"Multiple last zip files found: {last_zip_files}"
+            if last_zip_files:
+                for f in last_zip_files:
+                    f.unlink()
+                    print(f"Removed previous last zip file: {f}")
+        else:
+            if archive_file.exists():
+                archive_file.unlink()
+                print(f"Removed previous archive file: {archive_file}")
+            else:
+                # check if there are any overlapping files, if yes, then remove the existing archive file
+                to_remove_archive_files = []
+                for existing_archive_file, (start_idx, end_idx) in zip(existing_archive_files, existing_archive_indexes):
+                    if (last_archive_idx < end_idx) and (last_archive_idx + len(cur_archive_files) > start_idx):
+                        to_remove_archive_files.append((existing_archive_file, start_idx, end_idx))
+                if to_remove_archive_files:
+                    print(f"Overlapping archive files: {to_remove_archive_files}")
+                    for f, start_idx, end_idx in to_remove_archive_files:
+                        f.unlink()
+                        print(f"Removed overlapping archive file: {f}")
+
     re_archive = re_archive or (not archive_file.exists())
     if re_archive or overwrite:
         print(f"Creating archive {archive_file}")
