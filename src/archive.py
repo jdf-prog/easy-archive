@@ -39,9 +39,33 @@ class ArchiveFile:
         self.symlink_target = symlink_target
         self.update_archive = update_archive
 
+def get_readable_size_from_bytes(size):
+    for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+    return size
+
+def get_bytes_from_readable_size(size):
+    size = size.upper()
+    if size[-1] == "B":
+        size = size[:-1]
+    if size[-2:] == "KB":
+        return int(float(size[:-2]) * 1e3)
+    if size[-2:] == "MB":
+        return int(float(size[:-2]) * 1e6)
+    if size[-2:] == "GB":
+        return int(float(size[:-2]) * 1e9)
+    if size[-2:] == "TB":
+        return int(float(size[:-2]) * 1e12)
+    if size[-2:] == "PB":
+        return int(float(size[:-2]) * 1e15)
+    return int(size)
+
 def iter_archive_dir(
     archive_dir: str,
     save_dir: str = None,
+    max_size_per_archive: int = "500MB",
     num_files_per_archive: int = 10000,
     delete_original: bool = False,
     overwrite: bool = False,
@@ -59,6 +83,7 @@ def iter_archive_dir(
     file_or_dirs = [f for f in archive_dir.iterdir()]
     file_or_dirs.sort(key=lambda x: x.stat().st_ctime)  # Sort by create time
     cur_archive_files = []
+    cur_archive_size = 0
     last_archive_idx = 0
     
 
@@ -92,8 +117,9 @@ def iter_archive_dir(
                 else:
                     cur_archive_files.append(ArchiveFile(file, file_path, None, update_archive=True))
                 archive_info[file_path] = {"mtime": file_mtime, "size": file.stat().st_size, "hash": file_hash}
+            cur_archive_size += file.stat().st_size
 
-            if len(cur_archive_files) >= num_files_per_archive:
+            if len(cur_archive_files) >= num_files_per_archive or cur_archive_size >= get_bytes_from_readable_size(max_size_per_archive):
                 create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, delete_original)
                 last_archive_idx += len(cur_archive_files)
                 cur_archive_files = []
@@ -159,6 +185,7 @@ def main(
     archive_dir: str,
     save_dir: str = None,
     num_files_per_archive: int = 10000,
+    max_size_per_archive: str = "500MB",
     delete_original: bool = False,
     overwrite: bool = False,
     remove_duplicates: bool = True,
@@ -180,12 +207,13 @@ def main(
     dataset = datasets.Dataset.from_dict({"archive_dir": list(map(str, archive_dirs)), "save_dir": list(map(str, save_dirs))})
     partial_iter_archive_dir = partial(iter_archive_dir_mp,
                                        num_files_per_archive=num_files_per_archive, 
+                                       max_size_per_archive=max_size_per_archive,  
                                        delete_original=delete_original, 
                                        overwrite=overwrite, 
                                        remove_duplicates=remove_duplicates)
     dataset.map(partial_iter_archive_dir, num_proc=num_proc)
     
-    iter_archive_dir(archive_dir, save_dir, num_files_per_archive, delete_original, overwrite, remove_duplicates, recursive=False)
+    iter_archive_dir(archive_dir, save_dir, num_files_per_archive, delete_original, overwrite, remove_duplicates, recursive=False, max_size_per_archive=max_size_per_archive)
 
 if __name__ == "__main__":
     fire.Fire(main)
