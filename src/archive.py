@@ -126,6 +126,7 @@ def iter_archive_dir(
                 create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, delete_original)
                 last_archive_idx += len(cur_archive_files)
                 cur_archive_files = []
+                cur_archive_size = 0
         else:
             raise ValueError(f"Unknown file type: {file}")
     
