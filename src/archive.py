@@ -194,7 +194,7 @@ def create_archive(cur_archive_files, save_dir, last_archive_idx, overwrite, del
             # check_completeness
             with zipfile.ZipFile(archive_file, "r") as zipf:
                 zipf_files = zipf.namelist()
-            if set(zipf_files) == set([f.name for f in cur_archive_files]):
+            if set(zipf_files) == set([f.arcname for f in cur_archive_files]):
                 print(f"Archive {archive_file} is complete. Skipping.")
             else:
                 print(f"Archive {archive_file} is incomplete. removing and rearchiving.")
