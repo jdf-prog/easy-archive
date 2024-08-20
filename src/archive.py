@@ -245,7 +245,7 @@ def main(
                                        remove_duplicates=remove_duplicates)
     dataset.map(partial_iter_archive_dir, num_proc=num_proc)
     
-    iter_archive_dir(archive_dir, save_dir, num_files_per_archive, delete_original, overwrite, remove_duplicates, recursive=False, max_size_per_archive=max_size_per_archive)
+    iter_archive_dir(archive_dir, save_dir, max_size_per_archive, num_files_per_archive, delete_original, overwrite, remove_duplicates, recursive=False)
 
 if __name__ == "__main__":
     fire.Fire(main)
