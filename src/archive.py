@@ -47,19 +47,20 @@ def get_readable_size_from_bytes(size):
     return size
 
 def get_bytes_from_readable_size(size):
-    size = size.upper()
-    if size[-1] == "B":
-        size = size[:-1]
+    size = size.upper().strip()
+    
     if size[-2:] == "KB":
         return int(float(size[:-2]) * 1e3)
-    if size[-2:] == "MB":
+    elif size[-2:] == "MB":
         return int(float(size[:-2]) * 1e6)
-    if size[-2:] == "GB":
+    elif size[-2:] == "GB":
         return int(float(size[:-2]) * 1e9)
-    if size[-2:] == "TB":
+    elif size[-2:] == "TB":
         return int(float(size[:-2]) * 1e12)
-    if size[-2:] == "PB":
+    elif size[-2:] == "PB":
         return int(float(size[:-2]) * 1e15)
+    elif size[-1] == "B" and size[:-1].isdigit():
+        size = size[:-1]
     return int(size)
 
 def iter_archive_dir(
