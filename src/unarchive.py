@@ -1,9 +1,28 @@
 import fire
 import zipfile
 import os
+import subprocess
 from pathlib import Path
 from tqdm import tqdm
 
+def unzip_file(zip_path, extract_path=None, skip_existing=False, overwrite_existing=False):
+    try:
+        
+        command = ['unzip', str(zip_path)]
+        if extract_path:
+            command += ['-d', str(extract_path)]
+        if overwrite_existing:
+            command.insert(1, '-o')
+        elif skip_existing:
+            command.insert(1, '-n')
+        print(f"Unzipping command: {command}")
+        subprocess.run(command, check=True)
+        print(f"Successfully extracted {zip_path} to {extract_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred while unzipping: {e}")
+    except FileNotFoundError:
+        print("Error: 'unzip' command not found. Please ensure it's installed.")
+        
 def iter_unarchive_dir(
     archive_dir: str = "./archive",
     unarchived_dir: str = "./unarchive",
@@ -20,25 +39,18 @@ def iter_unarchive_dir(
         if file.is_dir():
             iter_unarchive_dir(file, unarchived_dir / file.name, overwrite)
         elif file.is_file() and zipfile.is_zipfile(file):
-            with zipfile.ZipFile(file, "r") as zipf:
-                zipf_files = zipf.namelist()
-                for f in tqdm(zipf_files, total=len(zipf_files), desc=f"Extracting {file}"):
-                    f_path = unarchived_dir / f
-                    if f_path.exists() and not overwrite:
-                        pass
-                        # print(f"File {f_path} already exists. Skipping.")
-                    else:
-                        # print(f"Extracting {f} to {f_path}")
-                        zipf.extract(f, unarchived_dir)
+            # Unzip file
+            unzip_file(file, unarchived_dir, skip_existing=not overwrite, overwrite_existing=overwrite)
         else:
-            print(f"File {file} is not a zip file. Skipping.")
+            pass
+            # print(f"File {file} is not a zip file. Skipping.")
     
 
 def main(
-    archived_dir: str = "./archive",
-    unarchived_dir: str = "./unarchive",
+    archive_dir: str = "./archive",
+    unarchive_dir: str = "./unarchive",
 ):
-    iter_unarchive_dir(archived_dir, unarchived_dir)
+    iter_unarchive_dir(archive_dir, unarchive_dir)
     
 if __name__ == "__main__":
     fire.Fire(main)
