@@ -22,7 +22,16 @@ def unzip_file(zip_path, extract_path=None, skip_existing=False, overwrite_exist
         print(f"Error occurred while unzipping: {e}")
     except FileNotFoundError:
         print("Error: 'unzip' command not found. Please ensure it's installed.")
-        
+
+def check_unzip_installed():
+    try:
+        subprocess.run(['unzip', '--version'], check=True)
+        print("Unzip command found.")
+        return True
+    except FileNotFoundError:
+        print("Error: 'unzip' command not found. Please ensure it's installed.")
+        return False
+    
 def iter_unarchive_dir(
     archive_dir: str = "./archive",
     unarchived_dir: str = "./unarchive",
@@ -50,6 +59,7 @@ def main(
     archive_dir: str = "./archive",
     unarchive_dir: str = "./unarchive",
 ):
+    check_unzip_installed()
     iter_unarchive_dir(archive_dir, unarchive_dir)
     
 if __name__ == "__main__":
